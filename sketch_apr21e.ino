@@ -27,7 +27,7 @@ void dumpEEPROM(int addr) {
   Serial.println("Dumping EEPROM:");
   for (int page = 0; page < NUM_PAGES; page++) {
     Serial.print("0x");
-    if (page < 16) Serial.print("0"); // add leading zero for single digit page numbers
+    if (page < 16) Serial.print("0"); // add leading zero for single-digit page numbers
     Serial.print(page * PAGE_SIZE, HEX); // print page start address in 0x0000 format
     Serial.print(" ");
     for (int offset = 0; offset < PAGE_SIZE; offset++) {
@@ -114,7 +114,7 @@ void setup() {
   clearEEPROM(EEPROM_ADDR_2);
   clearEEPROM(EEPROM_ADDR_3);
 
-  // Write text to EEPROMs
+  // Write text only to the first EEPROM; others are optional
   const char* textToWrite = "your name";
   int startAddr = 0x0010;
   writeTextToEEPROM(textToWrite, startAddr, EEPROM_ADDR_1);
@@ -128,32 +128,34 @@ void loop() {
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');
     if (command.startsWith("i2cdetect -y ")) {
-      int spaceIndex = command.indexOf(' ');
-      if (spaceIndex != -1) {
-        String busString = command.substring(spaceIndex + 1);
+      int prefixIndex = command.indexOf("-y ");
+      if (prefixIndex != -1) {
+        String busString = command.substring(prefixIndex + 3);
         int bus = busString.toInt();
         i2cScan(bus);
       }
     } else if (command.startsWith("i2cdump -y ")) {
-      int spaceIndex = command.indexOf(' ');
-      if (spaceIndex != -1) {
-        int addrIndex = command.indexOf("0x", spaceIndex + 1);
+      int prefixIndex = command.indexOf("-y ");
+      if (prefixIndex != -1) {
+        int addrIndex = command.indexOf("0x", prefixIndex + 3);
         if (addrIndex != -1) {
+          int bus = command.substring(prefixIndex + 3, addrIndex).toInt();
+          (void)bus; // bus not used in this sketch
           String addressString = command.substring(addrIndex);
           int address = strtol(addressString.c_str(), NULL, 16);
           dumpEEPROM(address);
         }
       }
     } else if (command.startsWith("i2cset -y ")) {
-      int spaceIndex = command.indexOf(' ');
-      if (spaceIndex != -1) {
-        int addrIndex = command.indexOf("0x", spaceIndex + 1);
+      int prefixIndex = command.indexOf("-y ");
+      if (prefixIndex != -1) {
+        int addrIndex = command.indexOf("0x", prefixIndex + 3);
         if (addrIndex != -1) {
           int regIndex = command.indexOf("0x", addrIndex + 1);
           if (regIndex != -1) {
             int valueIndex = command.indexOf("0x", regIndex + 1);
             if (valueIndex != -1) {
-              int bus = command.substring(spaceIndex + 1, addrIndex).toInt();
+              int bus = command.substring(prefixIndex + 3, addrIndex).toInt();
               int address = strtol(command.substring(addrIndex, regIndex).c_str(), NULL, 16);
               int reg = strtol(command.substring(regIndex, valueIndex).c_str(), NULL, 16);
               byte value = strtol(command.substring(valueIndex).c_str(), NULL, 16);
@@ -163,13 +165,13 @@ void loop() {
         }
       }
     } else if (command.startsWith("i2cget -y ")) {
-      int spaceIndex = command.indexOf(' ');
-      if (spaceIndex != -1) {
-        int addrIndex = command.indexOf("0x", spaceIndex + 1);
+      int prefixIndex = command.indexOf("-y ");
+      if (prefixIndex != -1) {
+        int addrIndex = command.indexOf("0x", prefixIndex + 3);
         if (addrIndex != -1) {
           int regIndex = command.indexOf("0x", addrIndex + 1);
           if (regIndex != -1) {
-            int bus = command.substring(spaceIndex + 1, addrIndex).toInt();
+            int bus = command.substring(prefixIndex + 3, addrIndex).toInt();
             int address = strtol(command.substring(addrIndex, regIndex).c_str(), NULL, 16);
             int reg = strtol(command.substring(regIndex).c_str(), NULL, 16);
             i2cGet(bus, address, reg);
