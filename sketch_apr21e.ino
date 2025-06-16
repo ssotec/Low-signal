@@ -78,9 +78,10 @@ void i2cScan(int bus) {
   }
 }
 
-void i2cSet(int bus, int address, byte value) {
+void i2cSet(int bus, int address, int reg, byte value) {
   Wire.beginTransmission(address);
-  Wire.write(value);
+  Wire.write(reg);        // select register
+  Wire.write(value);      // write value
   Wire.endTransmission();
   Serial.println("Value set successfully.");
 }
@@ -148,12 +149,16 @@ void loop() {
       if (spaceIndex != -1) {
         int addrIndex = command.indexOf("0x", spaceIndex + 1);
         if (addrIndex != -1) {
-          int valueIndex = command.indexOf("0x", addrIndex + 1);
-          if (valueIndex != -1) {
-            int bus = command.substring(spaceIndex + 1, addrIndex).toInt();
-            int address = strtol(command.substring(addrIndex, valueIndex).c_str(), NULL, 16);
-            byte value = strtol(command.substring(valueIndex).c_str(), NULL, 16);
-            i2cSet(bus, address, value);
+          int regIndex = command.indexOf("0x", addrIndex + 1);
+          if (regIndex != -1) {
+            int valueIndex = command.indexOf("0x", regIndex + 1);
+            if (valueIndex != -1) {
+              int bus = command.substring(spaceIndex + 1, addrIndex).toInt();
+              int address = strtol(command.substring(addrIndex, regIndex).c_str(), NULL, 16);
+              int reg = strtol(command.substring(regIndex, valueIndex).c_str(), NULL, 16);
+              byte value = strtol(command.substring(valueIndex).c_str(), NULL, 16);
+              i2cSet(bus, address, reg, value);
+            }
           }
         }
       }
