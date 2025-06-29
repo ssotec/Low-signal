@@ -36,6 +36,16 @@ def parse_i2cget(cmd):
     return bus, address, reg
 
 
+def parse_i2cdump(cmd):
+    prefix_index = cmd.find("-y ")
+    if prefix_index == -1:
+        raise ValueError("Invalid command")
+    addr_index = cmd.find("0x", prefix_index + 3)
+    bus = int(cmd[prefix_index + 3:addr_index].strip())
+    address = int(cmd[addr_index:], 16)
+    return bus, address
+
+
 class TestParsing(unittest.TestCase):
     def test_i2cdetect(self):
         self.assertEqual(parse_i2cdetect("i2cdetect -y 1"), 1)
@@ -47,6 +57,10 @@ class TestParsing(unittest.TestCase):
     def test_i2cget(self):
         cmd = "i2cget -y 2 0x50 0x01"
         self.assertEqual(parse_i2cget(cmd), (2, 0x50, 0x01))
+
+    def test_i2cdump(self):
+        cmd = "i2cdump -y 1 0x50"
+        self.assertEqual(parse_i2cdump(cmd), (1, 0x50))
 
 
 if __name__ == '__main__':
